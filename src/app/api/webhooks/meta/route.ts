@@ -52,7 +52,7 @@ async function handleComment(commentData: any) {
     });
 
     // Find matching automation
-    const matchedAutomation = automations.find((a) => text.includes(a.keyword.toLowerCase()));
+    const matchedAutomation = automations.find((a: any) => text.includes(a.keyword.toLowerCase()));
 
     if (matchedAutomation) {
         console.log(`Keyword matched for automation ${matchedAutomation.id}! Sending DM...`);
