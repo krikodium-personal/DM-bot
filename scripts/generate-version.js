@@ -4,32 +4,39 @@ const path = require('path');
 
 function generateVersion() {
   try {
-    const pkg = require('../package.json');
     let commitCount = 0;
     
-    try {
-      // Intentar descargar el historial completo de git en Vercel para contar bien
-      execSync('git fetch --unshallow', { stdio: 'ignore' });
-    } catch (e) {
-      // Falla silenciosamente si ya tenemos el historial completo o si el entorno no lo permite
+    // Attempt 1: Get short SHA if in Vercel (often reliable)
+    let commitHash = process.env.VERCEL_GIT_COMMIT_SHA 
+      ? process.env.VERCEL_GIT_COMMIT_SHA.substring(0, 7) 
+      : '';
+
+    // Attempt 2: If local, try git
+    if (!commitHash) {
+      try {
+        commitHash = execSync('git rev-parse --short HEAD').toString().trim();
+      } catch (e) {
+        commitHash = 'unknown';
+      }
     }
 
+    // Try to get count for local environments
     try {
       commitCount = execSync('git rev-list --count HEAD').toString().trim();
     } catch (e) {
-      commitCount = "1";
+      // If git fails (like in Vercel), we fallback to using the day of the year + hour
+      // to create an ever-increasing number for the day
+      const now = new Date();
+      const start = new Date(now.getFullYear(), 0, 0);
+      const diff = now - start;
+      const oneDay = 1000 * 60 * 60 * 24;
+      const dayOfYear = Math.floor(diff / oneDay);
+      // Format: [DayOfYear][Hour] e.g. 6815
+      commitCount = `${dayOfYear}${now.getHours()}`;
     }
     
-    // Formatear a 2 dígitos (ej: "01", "02", "15")
-    const formattedCount = String(commitCount).padStart(2, '0');
-    
-    let commitHash = 'unknown';
-    try {
-      commitHash = execSync('git rev-parse --short HEAD').toString().trim();
-    } catch (e) {}
-    
     const versionInfo = {
-      version: `v${formattedCount}`,
+      version: `v${commitCount}`,
       hash: commitHash,
       timestamp: new Date().toISOString()
     };
