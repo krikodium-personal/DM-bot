@@ -11,16 +11,21 @@ async function getAvailableInstagramAccounts(userId: string) {
         where: { userId, provider: "facebook" },
     });
 
-    if (!account?.access_token) return [];
+    if (!account?.access_token) return { accounts: [], error: "No Facebook access token found in database for this user." };
 
     try {
         const res = await fetch(
             `https://graph.facebook.com/v19.0/me/accounts?access_token=${account.access_token}`
         );
         const data = await res.json();
-        const pages = data.data || [];
+        
+        if (data.error) {
+            return { accounts: [], error: `Graph API Error: ${data.error.message}`, debug: data.error };
+        }
 
+        const pages = data.data || [];
         const igAccounts = [];
+
         for (const page of pages) {
             const igRes = await fetch(
                 `https://graph.facebook.com/v19.0/${page.id}?fields=instagram_business_account&access_token=${page.access_token}`
@@ -43,10 +48,15 @@ async function getAvailableInstagramAccounts(userId: string) {
                 });
             }
         }
-        return igAccounts;
-    } catch (error) {
+        
+        if (pages.length > 0 && igAccounts.length === 0) {
+            return { accounts: [], error: `Found ${pages.length} Facebook Pages, but none have an Instagram Business account linked to them.` };
+        }
+
+        return { accounts: igAccounts };
+    } catch (error: any) {
         console.error("Error fetching Meta assets:", error);
-        return [];
+        return { accounts: [], error: error.message || "Unknown error occurred while fetching accounts." };
     }
 }
 
@@ -60,7 +70,7 @@ export default async function DashboardPage() {
 
     // 2. If no channels, show the asset selector
     if (channels.length === 0) {
-        const availableAccounts = await getAvailableInstagramAccounts(session!.user.id);
+        const { accounts: availableAccounts, error, debug } = await getAvailableInstagramAccounts(session!.user.id);
 
         return (
             <div className={layoutStyles.pageHeader}>
@@ -70,11 +80,25 @@ export default async function DashboardPage() {
                 </p>
 
                 <div className={styles.accountsGrid}>
+                    {error && (
+                        <div className={layoutStyles.glassCard} style={{ gridColumn: "1 / -1", borderLeft: "4px solid var(--accent-primary)" }}>
+                            <h3 style={{ color: "var(--accent-primary)", marginBottom: "8px" }}>Diagnostic Check</h3>
+                            <p style={{ fontFamily: "monospace", fontSize: "0.9rem", color: "#ffa07a", background: "rgba(0,0,0,0.2)", padding: "10px", borderRadius: "4px" }}>
+                                {error}
+                            </p>
+                            {debug && (
+                                <pre style={{ marginTop: "10px", fontSize: "0.7rem", overflowX: "auto", background: "#111", padding: "10px", borderRadius: "4px" }}>
+                                    {JSON.stringify(debug, null, 2)}
+                                </pre>
+                            )}
+                        </div>
+                    )}
+
                     {availableAccounts.length === 0 ? (
-                        <div className={layoutStyles.glassCard}>
-                            <p>No Instagram Business accounts found.</p>
+                        <div className={layoutStyles.glassCard} style={{ gridColumn: "1 / -1" }}>
+                            <p>No Instagram Business accounts available to connect.</p>
                             <p className="text-secondary" style={{ fontSize: '0.9rem', marginTop: '8px' }}>
-                                Make sure your Instagram is a Professional/Business account and is linked to a Facebook Page you manage.
+                                Make sure your Instagram is a Professional/Business account and is explicitly linked to a Facebook Page you manage.
                             </p>
                         </div>
                     ) : (
