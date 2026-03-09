@@ -13,7 +13,9 @@ export const authOptions: NextAuthOptions = {
             authorization: {
                 url: "https://www.facebook.com/v19.0/dialog/oauth",
                 params: {
-                    scope: "email,public_profile"
+                    config_id: process.env.FACEBOOK_CONFIG_ID,
+                    response_type: "code",
+                    override_default_response_type: "true",
                 }
             }
         }),
