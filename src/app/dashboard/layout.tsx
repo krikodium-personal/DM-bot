@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import styles from "./layout.module.css";
 import Link from "next/link";
+import SignOutButton from "@/components/SignOutButton";
 
 export default async function DashboardLayout({
     children,
@@ -35,6 +36,7 @@ export default async function DashboardLayout({
                     </div>
                     <div className={styles.userInfo}>
                         <span className={styles.userName}>{session.user?.name}</span>
+                        <SignOutButton />
                     </div>
                 </div>
             </aside>
