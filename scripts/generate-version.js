@@ -4,12 +4,19 @@ const path = require('path');
 
 function generateVersion() {
   try {
-    const commitCount = execSync('git rev-list --count HEAD').toString().trim();
-    const commitHash = execSync('git rev-parse --short HEAD').toString().trim();
     const pkg = require('../package.json');
+    let commitHash = process.env.VERCEL_GIT_COMMIT_SHA ? process.env.VERCEL_GIT_COMMIT_SHA.substring(0, 7) : '';
+    
+    if (!commitHash) {
+        try {
+            commitHash = execSync('git rev-parse --short HEAD').toString().trim();
+        } catch (e) {
+            commitHash = 'unknown';
+        }
+    }
     
     const versionInfo = {
-      version: `${pkg.version}-${commitCount}`,
+      version: `${pkg.version}-${commitHash}`,
       hash: commitHash,
       timestamp: new Date().toISOString()
     };
