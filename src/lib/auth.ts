@@ -11,6 +11,7 @@ export const authOptions: NextAuthOptions = {
             clientId: process.env.APP_ID as string,
             clientSecret: process.env.APP_SECRET as string,
             authorization: {
+                url: "https://www.facebook.com/v19.0/dialog/oauth",
                 params: {
                     scope: "email,public_profile,instagram_manage_comments,instagram_manage_messages,pages_manage_metadata,pages_read_engagement,pages_show_list,business_management"
                 }
