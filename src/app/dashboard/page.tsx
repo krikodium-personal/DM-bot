@@ -96,7 +96,7 @@ export default async function DashboardPage() {
                                     )}
                                     <div className={styles.accountDetails}>
                                         <h3>@{acc.igUsername}</h3>
-                                        <p>Linked to Page: {acc.pageName}</p>
+                                        <p>Direct Instagram Connection</p>
                                     </div>
                                     <button type="submit" className="btn btn-primary" style={{ marginLeft: "auto" }}>
                                         Connect
