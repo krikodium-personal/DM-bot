@@ -4,39 +4,40 @@ const path = require('path');
 
 function generateVersion() {
   try {
-    let commitCount = 0;
+    let versionStr = '';
     
-    // Attempt 1: Get short SHA if in Vercel (often reliable)
-    let commitHash = process.env.VERCEL_GIT_COMMIT_SHA 
-      ? process.env.VERCEL_GIT_COMMIT_SHA.substring(0, 7) 
-      : '';
-
-    // Attempt 2: If local, try git
-    if (!commitHash) {
-      try {
-        commitHash = execSync('git rev-parse --short HEAD').toString().trim();
-      } catch (e) {
-        commitHash = 'unknown';
-      }
+    // In Vercel, git is available but it is a shallow clone (depth 10).
+    // `git rev-list --count` will just output "10" and NEVER throw an error.
+    // So we must check if we are in Vercel to bypass git counting.
+    if (process.env.VERCEL) {
+        // Create a sortable, friendly numeric string based on date: MMDD.HHmm 
+        // Example: 0309.2145 for March 9, 21:45
+        const now = new Date();
+        const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(now.getUTCDate()).padStart(2, '0');
+        const hour = String(now.getUTCHours()).padStart(2, '0');
+        const min = String(now.getUTCMinutes()).padStart(2, '0');
+        
+        versionStr = `v${month}${day}.${hour}${min}`;
+    } else {
+        // Local environment: safe to use git
+        try {
+            const commitCount = execSync('git rev-list --count HEAD').toString().trim();
+            versionStr = `v${String(commitCount).padStart(2, '0')}`;
+        } catch (e) {
+            versionStr = 'v00';
+        }
     }
 
-    // Try to get count for local environments
+    let commitHash = 'unknown';
     try {
-      commitCount = execSync('git rev-list --count HEAD').toString().trim();
-    } catch (e) {
-      // If git fails (like in Vercel), we fallback to using the day of the year + hour
-      // to create an ever-increasing number for the day
-      const now = new Date();
-      const start = new Date(now.getFullYear(), 0, 0);
-      const diff = now - start;
-      const oneDay = 1000 * 60 * 60 * 24;
-      const dayOfYear = Math.floor(diff / oneDay);
-      // Format: [DayOfYear][Hour] e.g. 6815
-      commitCount = `${dayOfYear}${now.getHours()}`;
-    }
-    
+        commitHash = process.env.VERCEL_GIT_COMMIT_SHA 
+          ? process.env.VERCEL_GIT_COMMIT_SHA.substring(0, 7) 
+          : execSync('git rev-parse --short HEAD').toString().trim();
+    } catch (e) {}
+
     const versionInfo = {
-      version: `v${commitCount}`,
+      version: versionStr,
       hash: commitHash,
       timestamp: new Date().toISOString()
     };
@@ -54,7 +55,7 @@ export const BUILD_TIMESTAMP = "${versionInfo.timestamp}";
     console.error('[VERSION] Failed to generate version:', error.message);
     const fallbackPath = path.join(__dirname, '../src/version.ts');
     if (!fs.existsSync(fallbackPath)) {
-      const fallbackContent = `export const APP_VERSION = "0.0.0-unknown";\nexport const COMMIT_HASH = "unknown";\nexport const BUILD_TIMESTAMP = "${new Date().toISOString()}";\n`;
+      const fallbackContent = `export const APP_VERSION = "v00";\nexport const COMMIT_HASH = "unknown";\nexport const BUILD_TIMESTAMP = "${new Date().toISOString()}";\n`;
       fs.writeFileSync(fallbackPath, fallbackContent);
     }
   }
