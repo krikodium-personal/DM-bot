@@ -69,7 +69,7 @@ async function handleComment(commentData: any) {
         // Actually sending the DM:
         await sendGraphApiDm(
             commenterId,
-            matchedAutomation.channel.pageAccessToken,
+            matchedAutomation.channel.accessToken,
             matchedAutomation.initialDm,
             matchedAutomation.ctaLabel,
             redirectUrl
