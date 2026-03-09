@@ -16,6 +16,7 @@ export const authOptions: NextAuthOptions = {
                     config_id: process.env.FACEBOOK_CONFIG_ID,
                     response_type: "code",
                     override_default_response_type: "true",
+                    auth_type: "reauthenticate",
                 }
             }
         }),
