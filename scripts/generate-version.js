@@ -5,18 +5,31 @@ const path = require('path');
 function generateVersion() {
   try {
     const pkg = require('../package.json');
-    let commitHash = process.env.VERCEL_GIT_COMMIT_SHA ? process.env.VERCEL_GIT_COMMIT_SHA.substring(0, 7) : '';
+    let commitCount = 0;
     
-    if (!commitHash) {
-        try {
-            commitHash = execSync('git rev-parse --short HEAD').toString().trim();
-        } catch (e) {
-            commitHash = 'unknown';
-        }
+    try {
+      // Intentar descargar el historial completo de git en Vercel para contar bien
+      execSync('git fetch --unshallow', { stdio: 'ignore' });
+    } catch (e) {
+      // Falla silenciosamente si ya tenemos el historial completo o si el entorno no lo permite
+    }
+
+    try {
+      commitCount = execSync('git rev-list --count HEAD').toString().trim();
+    } catch (e) {
+      commitCount = "1";
     }
     
+    // Formatear a 2 dígitos (ej: "01", "02", "15")
+    const formattedCount = String(commitCount).padStart(2, '0');
+    
+    let commitHash = 'unknown';
+    try {
+      commitHash = execSync('git rev-parse --short HEAD').toString().trim();
+    } catch (e) {}
+    
     const versionInfo = {
-      version: `${pkg.version}-${commitHash}`,
+      version: `v${formattedCount}`,
       hash: commitHash,
       timestamp: new Date().toISOString()
     };
