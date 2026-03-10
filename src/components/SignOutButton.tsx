@@ -18,7 +18,7 @@ export default function SignOutButton() {
                 textAlign: "left"
             }}
         >
-            Disconnect Facebook
+            Desconectar Cuenta
         </button>
     );
 }

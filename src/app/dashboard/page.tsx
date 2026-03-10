@@ -8,35 +8,55 @@ import Link from "next/link";
 
 async function getAvailableInstagramAccounts(userId: string) {
     const account = await prisma.account.findFirst({
-        where: { userId, provider: "instagram" },
+        where: { userId, provider: "facebook" },
     });
 
-    if (!account?.access_token) return { accounts: [], error: "No Instagram access token found in database for this user." };
+    if (!account?.access_token) return { accounts: [], error: "No Facebook access token found in database for this user." };
 
     try {
         const res = await fetch(
-            `https://graph.instagram.com/v22.0/me?fields=id,username,profile_picture_url&access_token=${account.access_token}`
+            `https://graph.facebook.com/v19.0/me/accounts?access_token=${account.access_token}`
         );
         const data = await res.json();
         
         if (data.error) {
-            return { accounts: [], error: `Instagram API Error: ${data.error.message}`, debug: data.error };
+            return { accounts: [], error: `Graph API Error: ${data.error.message}`, debug: data.error };
         }
 
-        // The user directly authorized their Instagram account, so we just return it
-        const igAccounts = [{
-            pageId: "direct-ig", // No longer tied to a specific Facebook Page ID in this context
-            pageName: "Direct Connection",
-            pageAccessToken: account.access_token, // We use the user's IG token
-            igId: data.id,
-            igUsername: data.username,
-            igProfilePic: data.profile_picture_url || "",
-        }];
+        const pages = data.data || [];
+        const igAccounts = [];
+
+        for (const page of pages) {
+            const igRes = await fetch(
+                `https://graph.facebook.com/v19.0/${page.id}?fields=instagram_business_account&access_token=${page.access_token}`
+            );
+            const igData = await igRes.json();
+
+            if (igData.instagram_business_account) {
+                const igInfoRes = await fetch(
+                    `https://graph.facebook.com/v19.0/${igData.instagram_business_account.id}?fields=username,profile_picture_url&access_token=${page.access_token}`
+                );
+                const igInfo = await igInfoRes.json();
+
+                igAccounts.push({
+                    pageId: page.id,
+                    pageName: page.name,
+                    pageAccessToken: page.access_token,
+                    igId: igInfo.id,
+                    igUsername: igInfo.username,
+                    igProfilePic: igInfo.profile_picture_url || "",
+                });
+            }
+        }
+        
+        if (pages.length > 0 && igAccounts.length === 0) {
+            return { accounts: [], error: `Found ${pages.length} Facebook Pages, but none have an Instagram Business account linked to them.` };
+        }
 
         return { accounts: igAccounts };
     } catch (error: any) {
-        console.error("Error fetching Instagram assets:", error);
-        return { accounts: [], error: error.message || "Unknown error occurred while fetching your Instagram account." };
+        console.error("Error fetching Meta assets:", error);
+        return { accounts: [], error: error.message || "Unknown error occurred while fetching accounts." };
     }
 }
 
@@ -96,7 +116,7 @@ export default async function DashboardPage() {
                                     )}
                                     <div className={styles.accountDetails}>
                                         <h3>@{acc.igUsername}</h3>
-                                        <p>Direct Instagram Connection</p>
+                                        <p>Linked to Page: {acc.pageName}</p>
                                     </div>
                                     <button type="submit" className="btn btn-primary" style={{ marginLeft: "auto" }}>
                                         Connect

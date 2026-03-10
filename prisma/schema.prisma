@@ -59,10 +59,9 @@ model VerificationToken {
 
 model Channel {
   id              String       @id @default(cuid())
-  platform        String       @default("instagram")
-  platformId      String       @unique
+  instagramId     String       @unique
   name            String
-  accessToken     String
+  pageAccessToken String
   userId          String
   user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   automations     Automation[]
