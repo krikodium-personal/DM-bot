@@ -11,7 +11,7 @@ export const authOptions: NextAuthOptions = {
             clientId: process.env.APP_ID as string,
             clientSecret: process.env.APP_SECRET as string,
             authorization: {
-                url: `https://business.facebook.com/dialog/oauth?config_id=${process.env.FACEBOOK_CONFIG_ID}&response_type=code&override_default_response_type=1&login_options[0]=IG&cma_account_switch=1&is_ig_oidc_with_redirect=1&display=popup&ret=login&fbapp_pres=0&scope=instagram_manage_messages,instagram_manage_comments,pages_manage_metadata,pages_read_engagement,pages_show_list,public_profile`,
+                url: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/auth/meta-proxy`,
                 params: {
                     scope: "instagram_manage_messages,instagram_manage_comments,pages_manage_metadata,pages_read_engagement,pages_show_list,public_profile"
                 }
