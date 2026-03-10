@@ -11,8 +11,12 @@ export const authOptions: NextAuthOptions = {
             clientId: process.env.APP_ID as string,
             clientSecret: process.env.APP_SECRET as string,
             authorization: {
-                url: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/auth/meta-proxy`,
+                url: "https://www.facebook.com/v19.0/dialog/oauth",
                 params: {
+                    config_id: process.env.FACEBOOK_CONFIG_ID,
+                    response_type: "code",
+                    override_default_response_type: "1",
+                    display: "popup",
                     scope: "instagram_manage_messages,instagram_manage_comments,pages_manage_metadata,pages_read_engagement,pages_show_list,public_profile"
                 }
             },
